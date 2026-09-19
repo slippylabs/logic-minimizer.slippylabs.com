@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Logic Minimizer &amp; K-Map // logic-minimizer.slippylabs.com</title>
+<meta name="description" content="Minimise a Boolean function to its exact smallest sum-of-products or product-of-sums, with a live Karnaugh map, prime implicant list, and C / Verilog / VHDL export. Runs entirely in your browser.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://logic-minimizer.slippylabs.com/">
+<meta property="og:title" content="Logic Minimizer &amp; K-Map // logic-minimizer.slippylabs.com">
+<meta property="og:description" content="Minimise a Boolean function to its exact smallest sum-of-products or product-of-sums, with a live Karnaugh map, prime implicant list, and C / Verilog / VHDL export. Runs entirely in your browser.">
+<meta property="og:image" content="https://logic-minimizer.slippylabs.com/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Logic Minimizer &amp; K-Map // logic-minimizer.slippylabs.com">
+<meta name="twitter:description" content="Minimise a Boolean function to its exact smallest sum-of-products or product-of-sums, with a live Karnaugh map, prime implicant list, and C / Verilog / VHDL export. Runs entirely in your browser.">
+<meta name="twitter:image" content="https://logic-minimizer.slippylabs.com/og-image.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2234%22%20r%3D%2222%22%20fill%3D%22%231c8a52%22%20stroke%3D%22%2339ff8f%22%20stroke-width%3D%222%22%2F%3E%3Ccircle%20cx%3D%2220%22%20cy%3D%2216%22%20r%3D%228%22%20fill%3D%22%231c8a52%22%20stroke%3D%22%2339ff8f%22%20stroke-width%3D%222%22%2F%3E%3Ccircle%20cx%3D%2244%22%20cy%3D%2216%22%20r%3D%228%22%20fill%3D%22%231c8a52%22%20stroke%3D%22%2339ff8f%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E">
+<meta name="theme-color" content="#050b10">
+<link rel="stylesheet" href="style.css?v=1">
+<script>/* perf-lite: drop blend/blur effects on low-power devices. ?fx=lite or ?fx=full to override (persisted). */
+(function(){try{var k="slippy-fx",m=location.search.match(/[?&]fx=(lite|full)/),v=m?m[1]:localStorage.getItem(k);if(m)localStorage.setItem(k,v);if(v==="lite"||(v!=="full"&&(navigator.hardwareConcurrency||8)<=2))document.documentElement.classList.add("perf-lite");}catch(e){}})();</script>
+</head>
+<body>
+
+<div class="starfield"></div>
+<div class="scanlines"></div>
+
+<main class="page-wrap">
+  <div class="hud-panel wide">
+    <div class="corner tl"></div>
+    <div class="corner tr"></div>
+    <div class="corner bl"></div>
+    <div class="corner br"></div>
+
+    <div class="callsign-row">
+      <div class="toad-avatar-wrap">
+        <svg class="toad-avatar" width="46" height="46" viewBox="0 0 64 64">
+          <circle cx="32" cy="34" r="22" fill="#1c8a52" stroke="#39ff8f" stroke-width="2"/>
+          <circle cx="20" cy="16" r="8" fill="#1c8a52" stroke="#39ff8f" stroke-width="2"/>
+          <circle cx="44" cy="16" r="8" fill="#1c8a52" stroke="#39ff8f" stroke-width="2"/>
+          <circle cx="20" cy="16" r="3.5" fill="#050b10"/>
+          <circle cx="44" cy="16" r="3.5" fill="#050b10"/>
+          <ellipse cx="24" cy="32" rx="4.5" ry="5.5" fill="#050b10"/>
+          <ellipse cx="40" cy="32" rx="4.5" ry="5.5" fill="#050b10"/>
+          <circle cx="24" cy="30" r="1.4" fill="#39ff8f"/>
+          <circle cx="40" cy="30" r="1.4" fill="#39ff8f"/>
+          <path d="M22 42 Q32 48 42 42" stroke="#050b10" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </svg>
+        <div class="lock-reticle"></div>
+      </div>
+      <span class="callsign">Workshop Division // Tool</span>
+      <div class="nav-links">
+        <a href="https://projects.slippylabs.com/" class="logout-link">← Archive</a>
+      </div>
+    </div>
+
+
+    <h1>LOGIC MINIMIZER &amp; K-MAP</h1>
+    <p class="subtitle">Type an expression or click the map. Quine&ndash;McCluskey finds every prime implicant, then a branch-and-bound exact cover picks a <em>provably minimal</em> one &mdash; fewest terms first, then fewest literals. Not a greedy guess.</p>
+
+    <div class="lm-input-grid">
+      <div class="tool-field-row">
+        <label class="tool-field-label" for="expr-input">Boolean expression</label>
+        <input class="tool-text-input" id="expr-input" type="text" spellcheck="false"
+               autocapitalize="off" autocomplete="off"
+               placeholder="A B' + C(A + D)   ·   a &amp; !b | c ^ d   ·   (A XOR B) AND NOT C">
+      </div>
+      <div class="tool-field-row">
+        <label class="tool-field-label" for="preset-select">Classic functions</label>
+        <select class="tool-select" id="preset-select">
+          <option value="">— pick one —</option>
+        </select>
+      </div>
+    </div>
+    <p class="tool-note" id="expr-error" role="alert"></p>
+    <p class="tool-note" id="expr-hint">
+      Single letters are variables (so <code>AB</code> means <code>A AND B</code>).
+      <code>'</code> <code>!</code> <code>~</code> negate, <code>&amp;</code> <code>*</code> <code>·</code>
+      are AND, <code>+</code> <code>|</code> are OR, <code>^</code> is XOR, and
+      <code>AND OR NOT XOR NAND NOR XNOR</code> work as words. Constants <code>0</code> and <code>1</code> too.
+    </p>
+
+    <div class="tool-controls">
+      <label class="tool-field-label" for="vars-select" style="margin-right:-4px">Variables</label>
+      <select class="tool-select" id="vars-select">
+        <option value="2">2 (A B)</option>
+        <option value="3">3 (A B C)</option>
+        <option value="4" selected>4 (A B C D)</option>
+        <option value="5">5 (A&hellip;E)</option>
+        <option value="6">6 (A&hellip;F)</option>
+      </select>
+      <button class="tool-btn" id="rand-btn">Random Function</button>
+      <button class="tool-btn ghost" id="clear-btn">All Zero</button>
+      <button class="tool-btn ghost" id="invert-btn">Invert</button>
+    </div>
+
+    <p class="tool-note">
+      Click a Karnaugh cell to cycle it <code>0 → 1 → X</code>. <code>X</code> is a don't-care: the
+      minimiser may use it or ignore it, whichever makes the result smaller.
+      Cells are Gray-coded, so neighbours &mdash; including across an edge &mdash; differ in one variable.
+    </p>
+
+    <div id="kmap-host"></div>
+
+    <div class="net-grid" id="stat-host"></div>
+
+    <div class="lm-result">
+      <div class="lm-result-label">Minimal sum of products (SOP)</div>
+      <div class="lm-expr" id="sop-out"></div>
+    </div>
+    <div class="lm-result">
+      <div class="lm-result-label">Minimal product of sums (POS)</div>
+      <div class="lm-expr" id="pos-out"></div>
+    </div>
+    <p class="tool-note" id="verify-note"></p>
+
+    <div class="cert-section-label">Prime implicants</div>
+    <p class="tool-note">
+      Every implicant that cannot be widened further. <span class="imp-chip essential" style="pointer-events:none">Essential</span>
+      ones cover a 1 no other implicant reaches, so they are in <em>every</em> minimal cover;
+      <span class="imp-chip used" style="pointer-events:none">chosen</span> marks the rest of the cover picked here.
+      Hover or tap one to light it up on the map.
+    </p>
+    <div class="imp-list" id="imp-host"></div>
+
+    <div class="cert-section-label">Export</div>
+    <div class="tool-controls">
+      <select class="tool-select" id="style-select">
+        <option value="c">C / C++ / Java  (&amp;&amp; || !)</option>
+        <option value="verilog">Verilog  (&amp; | ~)</option>
+        <option value="vhdl">VHDL  (and or not)</option>
+        <option value="python">Python  (and or not)</option>
+        <option value="math">Maths  (A&#773;B + C)</option>
+      </select>
+      <button class="tool-btn" id="copy-btn">Copy</button>
+      <span class="copy-toast" id="copy-toast">copied</span>
+    </div>
+    <pre class="tool-output" id="code-out"></pre>
+
+    <div class="cert-section-label">Truth table</div>
+    <div class="net-table-wrap">
+      <table class="net-table" id="tt-out"></table>
+    </div>
+
+    <p class="tool-note">
+      Gate counts assume a two-level implementation with unlimited fan-in, and count an inverter per
+      complemented literal once (not once per use). NAND-only and NOR-only forms follow from the two
+      De&nbsp;Morgan identities and always use the same number of gates as the AND-OR form they come from.
+    </p>
+    <div class="comm-window">
+      <div class="comm-portrait">
+        <svg width="36" height="36" viewBox="0 0 64 64">
+          <circle cx="32" cy="34" r="22" fill="#1c8a52" stroke="#39ff8f" stroke-width="2"/>
+          <circle cx="20" cy="16" r="8" fill="#1c8a52" stroke="#39ff8f" stroke-width="2"/>
+          <circle cx="44" cy="16" r="8" fill="#1c8a52" stroke="#39ff8f" stroke-width="2"/>
+          <circle cx="20" cy="16" r="3.5" fill="#050b10"/>
+          <circle cx="44" cy="16" r="3.5" fill="#050b10"/>
+          <ellipse cx="24" cy="32" rx="4.5" ry="5.5" fill="#050b10"/>
+          <ellipse cx="40" cy="32" rx="4.5" ry="5.5" fill="#050b10"/>
+          <circle cx="24" cy="30" r="1.4" fill="#39ff8f"/>
+          <circle cx="40" cy="30" r="1.4" fill="#39ff8f"/>
+          <path d="M22 42 Q32 48 42 42" stroke="#050b10" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="comm-body">
+        <div class="comm-label"><span class="dot"></span> Incoming Transmission &mdash; Slippy</div>
+        <p>&quot;The map is the proof: every result is re-checked against all 2^n rows before it reaches the screen.&quot;</p>
+      </div>
+    </div>
+
+    <a href="https://projects.slippylabs.com/" class="hud-btn">← Back to Archive</a>
+  </div>
+</main>
+
+
+<script>
+/* ---- Boolean core ----------------------------------------------------------
+   A function of n variables is one array `vals` of length 2^n over {0, 1, 2},
+   where 2 means don't-care and the index is the minterm number with A as the
+   most significant bit. Implicants are {bits, mask}: mask has a 1 for every
+   variable the implicant has eliminated, and those positions are zeroed in
+   bits, so an implicant covers m iff (m & ~mask) === bits.
+
+   Minimisation is textbook Quine-McCluskey for the prime implicants, then an
+   exact branch-and-bound cover (not the usual greedy pick) so the answer is
+   provably minimal: fewest product terms first, then fewest literals. The
+   search is bounded; if it ever runs out of budget the result is flagged as
+   heuristic in the UI rather than quietly claimed as minimal. */
+
+const VAR_NAMES = ['A', 'B', 'C', 'D', 'E', 'F'];
+const MAX_VARS = 6;
+
+/* -- tokenizer ------------------------------------------------------------- */
+
+const WORD_OPS = {
+  AND: 'and', OR: 'or', NOT: 'not', XOR: 'xor',
+  NAND: 'nand', NOR: 'nor', XNOR: 'xnor',
+};
+const SYMBOLS = {
+  '&': 'and', '*': 'and', '·': 'and', '∧': 'and', '∙': 'and',
+  '|': 'or', '+': 'or', '∨': 'or',
+  '^': 'xor', '⊕': 'xor',
+  '~': 'not', '!': 'not', '¬': 'not',
+  "'": 'prime', '’': 'prime', '̅': 'prime',
+  '(': 'lparen', ')': 'rparen', '[': 'lparen', ']': 'rparen',
+};
+
+function tokenize(src) {
+  const toks = [];
+  let i = 0;
+  while (i < src.length) {
+    const ch = src[i];
+    if (/\s/.test(ch)) { i++; continue; }
+    if (/[A-Za-z]/.test(ch)) {
+      // A run of letters is a word operator only if the whole run is one.
+      // Otherwise every letter is its own variable, so "AB" reads as A AND B.
+      const word = /^[A-Za-z]+/.exec(src.slice(i))[0];
+      const op = WORD_OPS[word.toUpperCase()];
+      if (op) { toks.push({ t: op }); i += word.length; continue; }
+      toks.push({ t: 'var', name: ch.toUpperCase(), text: ch });
+      i += 1;
+      continue;
+    }
+    if (ch === '0' || ch === '1') { toks.push({ t: 'const', v: ch === '1' ? 1 : 0 }); i++; continue; }
+    const sym = SYMBOLS[ch];
+    if (sym) { toks.push({ t: sym, text: ch }); i++; continue; }
+    throw new Error(`Don't know what to do with "${ch}"`);
+  }
+  return toks;
+}
+
+/* -- parser: NOT > AND > XOR > OR, with implicit AND ----------------------- */
+
+function parseExpr(src) {
+  const toks = tokenize(src);
+  let p = 0;
+  const peek = () => toks[p];
+  const eat = (t) => (toks[p] && toks[p].t === t ? (p++, true) : false);
+
+  function startsAtom() {
+    const t = peek();
+    return !!t && (t.t === 'var' || t.t === 'const' || t.t === 'lparen' || t.t === 'not');
+  }
+  function atom() {
+    const t = peek();
+    if (!t) throw new Error('Expression ends early — something is missing after the last operator');
+    if (t.t === 'var') { p++; return { op: 'var', name: t.name }; }
+    if (t.t === 'const') { p++; return { op: 'const', v: t.v }; }
+    if (t.t === 'lparen') {
+      p++;
+      const inner = orExpr();
+      if (!eat('rparen')) throw new Error('Missing a closing ")"');
+      return inner;
+    }
+    throw new Error(`Unexpected "${t.text || t.t}"`);
+  }
+  function postfix() {
+    let node = atom();
+    while (eat('prime')) node = { op: 'not', l: node };
+    return node;
+  }
+  function unary() {
+    if (eat('not')) return { op: 'not', l: unary() };
+    return postfix();
+  }
+  function andExpr() {
+    let left = unary();
+    for (;;) {
+      if (eat('and')) left = { op: 'and', l: left, r: unary() };
+      else if (eat('nand')) left = { op: 'not', l: { op: 'and', l: left, r: unary() } };
+      else if (startsAtom()) left = { op: 'and', l: left, r: unary() }; // juxtaposition
+      else return left;
+    }
+  }
+  function xorExpr() {
+    let left = andExpr();
+    for (;;) {
+      if (eat('xor')) left = { op: 'xor', l: left, r: andExpr() };
+      else if (eat('xnor')) left = { op: 'not', l: { op: 'xor', l: left, r: andExpr() } };
+      else return left;
+    }
+  }
+  function orExpr() {
+    let left = xorExpr();
+    for (;;) {
+      if (eat('or')) left = { op: 'or', l: left, r: xorExpr() };
+      else if (eat('nor')) left = { op: 'not', l: { op: 'or', l: left, r: xorExpr() } };
+      else return left;
+    }
+  }
+
+  if (!toks.length) throw new Error('Nothing to parse');
+  const ast = orExpr();
+  if (p < toks.length) throw new Error(`Unexpected "${toks[p].text || toks[p].t}" after a complete expression`);
+  return ast;
+}
+
+function collectVars(ast, into = new Set()) {
+  if (ast.op === 'var') into.add(ast.name);
+  if (ast.l) collectVars(ast.l, into);
+  if (ast.r) collectVars(ast.r, into);
+  return into;
+}
+
+function evalAst(ast, env) {
+  switch (ast.op) {
+    case 'const': return ast.v;
+    case 'var': return env[ast.name] ? 1 : 0;
+    case 'not': return evalAst(ast.l, env) ? 0 : 1;
+    case 'and': return evalAst(ast.l, env) && evalAst(ast.r, env) ? 1 : 0;
+    case 'or': return evalAst(ast.l, env) || evalAst(ast.r, env) ? 1 : 0;
+    case 'xor': return evalAst(ast.l, env) ^ evalAst(ast.r, env);
+    default: throw new Error(`Unknown node ${ast.op}`);
+  }
+}
+
+/* Truth table for an expression. n is forced (so a 4-variable map can hold a
+   function that happens to mention only A and C) but must cover every variable
+   the expression uses. */
+function tableFromExpr(src, n) {
+  const ast = parseExpr(src);
+  const used = [...collectVars(ast)].sort();
+  for (const v of used) {
+    const idx = VAR_NAMES.indexOf(v);
+    if (idx < 0) throw new Error(`"${v}" is not a variable — use ${VAR_NAMES.slice(0, MAX_VARS).join(' ')}`);
+    if (idx >= n) throw new Error(`"${v}" needs at least ${idx + 1} variables — raise the variable count`);
+  }
+  const vals = new Array(1 << n);
+  const env = {};
+  for (let m = 0; m < vals.length; m++) {
+    for (let j = 0; j < n; j++) env[VAR_NAMES[j]] = (m >> (n - 1 - j)) & 1;
+    vals[m] = evalAst(ast, env);
+  }
+  return vals;
+}
+
+/* -- Quine-McCluskey ------------------------------------------------------- */
+
+function primeImplicants(n, terms) {
+  let current = terms.map((t) => ({ bits: t, mask: 0 }));
+  const primes = [];
+  const seenPrime = new Set();
+  while (current.length) {
+    const used = new Array(current.length).fill(false);
+    const next = new Map();
+    for (let i = 0; i < current.length; i++) {
+      for (let j = i + 1; j < current.length; j++) {
+        const a = current[i];
+        const b = current[j];
+        if (a.mask !== b.mask) continue;
+        const diff = a.bits ^ b.bits;
+        if (diff === 0 || (diff & (diff - 1)) !== 0) continue; // must differ in exactly one bit
+        used[i] = true;
+        used[j] = true;
+        const mask = a.mask | diff;
+        const bits = a.bits & ~diff;
+        next.set(bits * 128 + mask, { bits, mask });
+      }
+    }
+    for (let i = 0; i < current.length; i++) {
+      if (used[i]) continue;
+      const key = current[i].bits * 128 + current[i].mask;
+      if (seenPrime.has(key)) continue;
+      seenPrime.add(key);
+      primes.push(current[i]);
+    }
+    current = [...next.values()];
+  }
+  // Widest (fewest literals) first, then by position — a stable order keeps the
+  // displayed cover reproducible run to run.
+  primes.sort((a, b) => popcount(b.mask) - popcount(a.mask) || a.bits - b.bits);
+  return primes;
+}
+
+function popcount(x) {
+  let c = 0;
+  while (x) { x &= x - 1; c++; }
+  return c;
+}
+
+function covers(imp, m) {
+  return (m & ~imp.mask) === imp.bits;
+}
+
+function literalCount(imp, n) {
+  return n - popcount(imp.mask);
+}
+
+/* -- exact minimum cover --------------------------------------------------- */
+
+const SEARCH_BUDGET = 400000;
+
+/* Returns { chosen: [primeIndex…], essential: Set, terms, literals, exact }.
+   `ones` are the minterms that MUST be covered; don't-cares are already baked
+   into the prime implicants and simply need no covering. */
+function minimumCover(n, ones, primes) {
+  if (!ones.length) return { chosen: [], essential: new Set(), terms: 0, literals: 0, exact: true };
+
+  const coversOne = primes.map((p) => ones.map((m) => covers(p, m)));
+  const lits = primes.map((p) => literalCount(p, n));
+
+  // Essential prime implicants: some 1 is covered by exactly one implicant.
+  const essential = new Set();
+  for (let k = 0; k < ones.length; k++) {
+    let only = -1;
+    let count = 0;
+    for (let i = 0; i < primes.length; i++) {
+      if (coversOne[i][k]) { count++; only = i; if (count > 1) break; }
+    }
+    if (count === 1) essential.add(only);
+  }
+
+  const covered = new Array(ones.length).fill(false);
+  const base = [...essential];
+  for (const i of base) for (let k = 0; k < ones.length; k++) if (coversOne[i][k]) covered[k] = true;
+
+  const remaining = [];
+  for (let k = 0; k < ones.length; k++) if (!covered[k]) remaining.push(k);
+
+  const baseTerms = base.length;
+  const baseLits = base.reduce((s, i) => s + lits[i], 0);
+  if (!remaining.length) {
+    return { chosen: base, essential, terms: baseTerms, literals: baseLits, exact: true };
+  }
+
+  // Candidates: implicants that cover at least one still-uncovered 1.
+  const cand = [];
+  for (let i = 0; i < primes.length; i++) {
+    if (essential.has(i)) continue;
+    if (remaining.some((k) => coversOne[i][k])) cand.push(i);
+  }
+  const candCover = cand.map((i) => remaining.map((k) => coversOne[i][k]));
+  const maxCover = Math.max(...candCover.map((row) => row.filter(Boolean).length));
+  const minLit = Math.min(...cand.map((i) => lits[i]));
+
+  let best = null;       // { pick: [candIndex…], terms, literals }
+  let budget = SEARCH_BUDGET;
+  let exact = true;
+
+  const better = (terms, literals) =>
+    !best || terms < best.terms || (terms === best.terms && literals < best.literals);
+
+  const seat = new Array(remaining.length).fill(false);
+
+  function search(pick, nCovered, terms, literals) {
+    if (budget-- <= 0) { exact = false; return; }
+    if (nCovered === remaining.length) {
+      if (better(terms, literals)) best = { pick: [...pick], terms, literals };
+      return;
+    }
+    if (best) {
+      const lbTerms = Math.ceil((remaining.length - nCovered) / maxCover);
+      if (terms + lbTerms > best.terms) return;
+      if (terms + lbTerms === best.terms && literals + lbTerms * minLit >= best.literals) return;
+    }
+    // Branch on the hardest still-uncovered 1: one of the implicants covering
+    // it must be chosen, so trying each is complete (no cover is missed).
+    let target = -1;
+    let targetOpts = Infinity;
+    for (let k = 0; k < remaining.length; k++) {
+      if (seat[k]) continue;
+      let opts = 0;
+      for (let c = 0; c < cand.length; c++) if (candCover[c][k] && !pick.includes(c)) opts++;
+      if (opts < targetOpts) { targetOpts = opts; target = k; }
+    }
+    for (let c = 0; c < cand.length; c++) {
+      if (!candCover[c][target] || pick.includes(c)) continue;
+      const flipped = [];
+      for (let k = 0; k < remaining.length; k++) {
+        if (candCover[c][k] && !seat[k]) { seat[k] = true; flipped.push(k); }
+      }
+      pick.push(c);
+      search(pick, nCovered + flipped.length, terms + 1, literals + lits[cand[c]]);
+      pick.pop();
+      for (const k of flipped) seat[k] = false;
+      if (!exact) return;
+    }
+  }
+
+  search([], 0, baseTerms, baseLits);
+
+  if (!best) {
+    // Only reachable if the budget ran out before any cover was found: fall
+    // back to greedy so the page still shows a correct (if not minimal) answer.
+    const pick = [];
+    const got = new Array(remaining.length).fill(false);
+    let left = remaining.length;
+    while (left > 0) {
+      let bestC = -1;
+      let bestGain = -1;
+      let bestLit = Infinity;
+      for (let c = 0; c < cand.length; c++) {
+        if (pick.includes(c)) continue;
+        let gain = 0;
+        for (let k = 0; k < remaining.length; k++) if (candCover[c][k] && !got[k]) gain++;
+        if (gain > bestGain || (gain === bestGain && lits[cand[c]] < bestLit)) {
+          bestC = c; bestGain = gain; bestLit = lits[cand[c]];
+        }
+      }
+      if (bestC < 0 || bestGain <= 0) break;
+      for (let k = 0; k < remaining.length; k++) if (candCover[bestC][k] && !got[k]) { got[k] = true; left--; }
+      pick.push(bestC);
+    }
+    best = {
+      pick,
+      terms: baseTerms + pick.length,
+      literals: baseLits + pick.reduce((s, c) => s + lits[cand[c]], 0),
+    };
+    exact = false;
+  }
+
+  return {
+    chosen: [...base, ...best.pick.map((c) => cand[c])],
+    essential,
+    terms: best.terms,
+    literals: best.literals,
+    exact,
+  };
+}
+
+/* Minimise one function. Returns both forms plus everything the UI needs. */
+function minimize(n, vals) {
+  const ones = [];
+  const zeros = [];
+  const dcs = [];
+  vals.forEach((v, m) => (v === 1 ? ones : v === 0 ? zeros : dcs).push(m));
+
+  const sopPrimes = primeImplicants(n, [...ones, ...dcs]);
+  const sop = minimumCover(n, ones, sopPrimes);
+
+  // POS comes from minimising the complement and applying De Morgan once.
+  const posPrimes = primeImplicants(n, [...zeros, ...dcs]);
+  const pos = minimumCover(n, zeros, posPrimes);
+
+  return {
+    n, vals, ones, zeros, dcs,
+    sopPrimes, sop,
+    posPrimes, pos,
+    sopImplicants: sop.chosen.map((i) => sopPrimes[i]),
+    posImplicants: pos.chosen.map((i) => posPrimes[i]),
+  };
+}
+
+/* Re-evaluate the minimised forms over every row. A minimiser that is subtly
+   wrong still prints something plausible, so nothing is shown until this
+   passes — it is 2^n cheap evaluations, n <= 6. */
+function checkResult(res) {
+  const { n, vals, sopImplicants, posImplicants } = res;
+  for (let m = 0; m < vals.length; m++) {
+    if (vals[m] === 2) continue;
+    const sopVal = sopImplicants.some((imp) => covers(imp, m)) ? 1 : 0;
+    // POS: complement of a sum of the complement's implicants.
+    const posVal = posImplicants.some((imp) => covers(imp, m)) ? 0 : 1;
+    if (sopVal !== vals[m] || posVal !== vals[m]) {
+      return { ok: false, minterm: m, sopVal, posVal };
+    }
+  }
+  return { ok: true, rows: vals.length };
+}
+
+/* -- formatting ------------------------------------------------------------ */
+
+function implicantLiterals(imp, n) {
+  const out = [];
+  for (let j = 0; j < n; j++) {
+    const bit = 1 << (n - 1 - j);
+    if (imp.mask & bit) continue;
+    out.push({ name: VAR_NAMES[j], neg: !(imp.bits & bit) });
+  }
+  return out;
+}
+
+const STYLES = {
+  math: { not: (s) => `${s}̅`, and: '', or: ' + ', open: '(', close: ')', lower: false },
+  c: { not: (s) => `!${s}`, and: ' && ', or: ' || ', open: '(', close: ')', lower: false },
+  verilog: { not: (s) => `~${s}`, and: ' & ', or: ' | ', open: '(', close: ')', lower: true },
+  vhdl: { not: (s) => `not ${s}`, and: ' and ', or: ' or ', open: '(', close: ')', lower: false },
+  python: { not: (s) => `not ${s}`, and: ' and ', or: ' or ', open: '(', close: ')', lower: false },
+};
+
+function litText(lit, st) {
+  const name = st.lower ? lit.name.toLowerCase() : lit.name;
+  return lit.neg ? st.not(name) : name;
+}
+
+/* SOP: OR of ANDs. POS: AND of ORs built from the complement's implicants, so
+   every literal flips (De Morgan). */
+function formatSOP(res, styleName) {
+  const st = STYLES[styleName];
+  const { n, sopImplicants, ones } = res;
+  if (!ones.length) return styleName === 'python' ? 'False' : '0';
+  const terms = sopImplicants.map((imp) => {
+    const ls = implicantLiterals(imp, n);
+    if (!ls.length) return styleName === 'python' ? 'True' : '1';
+    const body = ls.map((l) => litText(l, st)).join(st.and);
+    // The maths style writes AND as juxtaposition, which already binds tighter
+    // than "+"; brackets there would be noise. Every other style needs them.
+    const needsBrackets = st.and !== '' && sopImplicants.length > 1 && ls.length > 1;
+    return needsBrackets ? st.open + body + st.close : body;
+  });
+  return terms.join(st.or);
+}
+
+function formatPOS(res, styleName) {
+  const st = STYLES[styleName];
+  const { n, posImplicants, zeros } = res;
+  if (!zeros.length) return styleName === 'python' ? 'True' : '1';
+  const terms = posImplicants.map((imp) => {
+    const ls = implicantLiterals(imp, n).map((l) => ({ ...l, neg: !l.neg }));
+    if (!ls.length) return styleName === 'python' ? 'False' : '0';
+    const body = ls.map((l) => litText(l, st)).join(st.or);
+    return posImplicants.length > 1 && ls.length > 1 ? st.open + body + st.close : body;
+  });
+  return terms.join(st.and);
+}
+
+/* Two-level gate count with unlimited fan-in: one gate per multi-literal term,
+   one collector gate, and one inverter per distinct complemented variable. */
+function gateCount(implicants, n, flip) {
+  const invert = new Set();
+  let productGates = 0;
+  for (const imp of implicants) {
+    const ls = implicantLiterals(imp, n);
+    if (ls.length > 1) productGates++;
+    for (const l of ls) if (l.neg !== !!flip) invert.add(l.name);
+  }
+  const collector = implicants.length > 1 ? 1 : 0;
+  return { gates: productGates + collector + invert.size, inverters: invert.size };
+}
+
+/* -- Karnaugh map geometry -------------------------------------------------
+   Rows and columns walk a reflected Gray code, which is what makes physical
+   adjacency mean "differs in one variable" — including across the edges, since
+   the first and last entries of a Gray sequence also differ in one bit. */
+function grayList(bits) {
+  const out = [];
+  for (let i = 0; i < (1 << bits); i++) out.push(i ^ (i >> 1));
+  return out;
+}
+
+function mapLayout(n) {
+  const rowVars = n <= 2 ? 1 : n === 3 ? 1 : 2;
+  const colVars = n <= 2 ? 1 : 2;
+  const mapVars = n - rowVars - colVars;
+  return {
+    mapVars, rowVars, colVars,
+    mapNames: VAR_NAMES.slice(0, mapVars),
+    rowNames: VAR_NAMES.slice(mapVars, mapVars + rowVars),
+    colNames: VAR_NAMES.slice(mapVars + rowVars, n),
+    maps: grayList(mapVars),
+    rows: grayList(rowVars),
+    cols: grayList(colVars),
+  };
+}
+
+function mintermAt(layout, mapBits, rowBits, colBits) {
+  return (mapBits << (layout.rowVars + layout.colVars)) | (rowBits << layout.colVars) | colBits;
+}
+
+/* ==== UI ==== */
+
+const $ = (id) => document.getElementById(id);
+const GROUP_COLORS = ['#39ff8f', '#ff9130', '#6fb4ff', '#ff6fd8', '#ffe066', '#7dffe0', '#c08cff', '#ff8f6f'];
+
+const PRESETS = [
+  { label: 'Full adder — sum', n: 3, expr: 'A ^ B ^ C' },
+  { label: 'Full adder — carry out', n: 3, expr: 'AB + AC + BC' },
+  { label: 'Majority of 5', n: 5, expr: 'ABC + ABD + ABE + ACD + ACE + ADE + BCD + BCE + BDE + CDE' },
+  { label: 'Even parity over 4 bits', n: 4, expr: "(A ^ B ^ C ^ D)'" },
+  { label: '2-bit comparator — AB > CD', n: 4, expr: "AC' + BC'D' + ABD'" },
+  { label: 'Prime detector, 0–15', n: 4, minterms: [2, 3, 5, 7, 11, 13], dontcares: [] },
+  { label: 'Invalid BCD digit', n: 4, minterms: [10, 11, 12, 13, 14, 15], dontcares: [] },
+  { label: '7-segment "a", BCD in', n: 4, minterms: [0, 2, 3, 5, 6, 7, 8, 9], dontcares: [10, 11, 12, 13, 14, 15] },
+  { label: '7-segment "b", BCD in', n: 4, minterms: [0, 1, 2, 3, 4, 7, 8, 9], dontcares: [10, 11, 12, 13, 14, 15] },
+  { label: 'Textbook Σ(0,1,2,5,6,7,8,9,10,14)', n: 4, minterms: [0, 1, 2, 5, 6, 7, 8, 9, 10, 14], dontcares: [] },
+  { label: 'Cyclic map (no essential PIs)', n: 4, minterms: [0, 1, 4, 5, 6, 7, 10, 11, 14, 15], dontcares: [] },
+  { label: 'Gray code bit 1 from binary', n: 4, expr: 'B ^ C' },
+  { label: 'Always 1', n: 3, expr: '1' },
+];
+
+let state = { n: 4, vals: new Array(16).fill(0), result: null, highlight: null };
+
+/* ---- model ---- */
+
+function setVals(n, vals) {
+  state.n = n;
+  state.vals = vals;
+  state.highlight = null;
+  $('vars-select').value = String(n);
+  recompute();
+}
+
+function recompute() {
+  state.result = minimize(state.n, state.vals);
+  state.check = checkResult(state.result);
+  renderAll();
+}
+
+/* ---- render ---- */
+
+function renderAll() {
+  renderKmap();
+  renderStats();
+  renderExprs();
+  renderImplicants();
+  renderCode();
+  renderTruthTable();
+}
+
+function cellClass(v) {
+  return v === 1 ? 'one' : v === 2 ? 'dc' : 'zero';
+}
+function cellText(v) {
+  return v === 1 ? '1' : v === 2 ? 'X' : '0';
+}
+
+function renderKmap() {
+  const { n, vals, result } = state;
+  const layout = mapLayout(n);
+  const host = $('kmap-host');
+  host.innerHTML = '';
+
+  // Which chosen implicants cover each cell, for the corner dots.
+  const groupsFor = new Map();
+  result.sopImplicants.forEach((imp, gi) => {
+    for (let m = 0; m < vals.length; m++) {
+      if (!covers(imp, m)) continue;
+      if (!groupsFor.has(m)) groupsFor.set(m, []);
+      groupsFor.get(m).push(gi);
+    }
+  });
+
+  const wrap = document.createElement('div');
+  wrap.className = 'kmap-wrap';
+
+  layout.maps.forEach((mapBits) => {
+    const block = document.createElement('div');
+    block.className = 'kmap-block';
+
+    if (layout.mapVars) {
+      const cap = document.createElement('div');
+      cap.className = 'kmap-caption';
+      cap.textContent = `${layout.mapNames.join('')} = ${mapBits.toString(2).padStart(layout.mapVars, '0')}`;
+      block.appendChild(cap);
+    }
+
+    const table = document.createElement('table');
+    table.className = 'kmap';
+    const thead = document.createElement('thead');
+    const hrow = document.createElement('tr');
+    const corner = document.createElement('th');
+    corner.className = 'kmap-corner';
+    corner.innerHTML = `<span>${layout.colNames.join('')}</span><span>${layout.rowNames.join('')}</span>`;
+    hrow.appendChild(corner);
+    layout.cols.forEach((c) => {
+      const th = document.createElement('th');
+      th.textContent = c.toString(2).padStart(layout.colVars, '0');
+      hrow.appendChild(th);
+    });
+    thead.appendChild(hrow);
+    table.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+    layout.rows.forEach((r) => {
+      const tr = document.createElement('tr');
+      const th = document.createElement('th');
+      th.textContent = r.toString(2).padStart(layout.rowVars, '0');
+      tr.appendChild(th);
+      layout.cols.forEach((c) => {
+        const m = mintermAt(layout, mapBits, r, c);
+        const td = document.createElement('td');
+        td.className = `kmap-cell ${cellClass(vals[m])}`;
+        td.dataset.m = String(m);
+        td.tabIndex = 0;
+        td.setAttribute('role', 'button');
+        td.title = `minterm ${m} — ${m.toString(2).padStart(n, '0')}`;
+        const val = document.createElement('span');
+        val.className = 'kmap-val';
+        val.textContent = cellText(vals[m]);
+        td.appendChild(val);
+        const idx = document.createElement('span');
+        idx.className = 'kmap-idx';
+        idx.textContent = String(m);
+        td.appendChild(idx);
+        const gs = groupsFor.get(m) || [];
+        if (gs.length) {
+          const dots = document.createElement('span');
+          dots.className = 'kmap-dots';
+          gs.slice(0, 4).forEach((gi) => {
+            const d = document.createElement('i');
+            d.style.background = GROUP_COLORS[gi % GROUP_COLORS.length];
+            dots.appendChild(d);
+          });
+          td.appendChild(dots);
+        }
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    block.appendChild(table);
+    wrap.appendChild(block);
+  });
+
+  host.appendChild(wrap);
+  applyHighlight();
+}
+
+function applyHighlight() {
+  const hl = state.highlight;
+  document.querySelectorAll('.kmap-cell').forEach((td) => {
+    td.classList.remove('hl');
+    td.style.removeProperty('--hl');
+  });
+  if (hl == null) return;
+  const imp = hl.kind === 'sop' ? state.result.sopPrimes[hl.i] : state.result.posPrimes[hl.i];
+  const color = hl.color;
+  document.querySelectorAll('.kmap-cell').forEach((td) => {
+    const m = Number(td.dataset.m);
+    if (covers(imp, m)) {
+      td.classList.add('hl');
+      td.style.setProperty('--hl', color);
+    }
+  });
+}
+
+function renderStats() {
+  const { n, result, check } = state;
+  const sopGates = gateCount(result.sopImplicants, n, false);
+  const posGates = gateCount(result.posImplicants, n, true);
+  const tiles = [
+    ['SOP terms', `${result.sop.terms}`],
+    ['SOP literals', `${result.sop.literals}`],
+    ['SOP gates', `${sopGates.gates}`],
+    ['POS terms', `${result.pos.terms}`],
+    ['POS literals', `${result.pos.literals}`],
+    ['POS gates', `${posGates.gates}`],
+    ['Ones / dont-cares', `${result.ones.length} / ${result.dcs.length}`],
+    ['Prime implicants', `${result.sopPrimes.length}`],
+  ];
+  $('stat-host').innerHTML = tiles.map(([label, value]) => `
+    <div class="net-tile">
+      <div class="net-tile-label">${label}</div>
+      <div class="net-tile-value mono">${value}</div>
+    </div>`).join('');
+
+  const exact = result.sop.exact && result.pos.exact;
+  const note = $('verify-note');
+  if (!check.ok) {
+    note.className = 'tool-output error-text';
+    note.textContent = `Self-check FAILED at minterm ${check.minterm} — do not trust this result.`;
+  } else {
+    note.className = 'tool-note';
+    note.innerHTML = exact
+      ? `Re-checked against all ${check.rows} rows of the truth table, and the cover is a proven minimum (exhaustive branch and bound).`
+      : `Re-checked against all ${check.rows} rows, but the exact-cover search hit its node budget on this function, so the cover shown is a greedy fallback and may not be minimal.`;
+  }
+}
+
+function exprHtml(text) {
+  // The maths style marks negation with a combining overline; render it as a
+  // real overline span so it lines up, and keep the plain text for copying.
+  return text.replace(/(.)̅/g, '<span class="ovl">$1</span>');
+}
+
+function renderExprs() {
+  $('sop-out').innerHTML = exprHtml(formatSOP(state.result, 'math'));
+  $('pos-out').innerHTML = exprHtml(formatPOS(state.result, 'math'));
+}
+
+function renderImplicants() {
+  const { n, result } = state;
+  const host = $('imp-host');
+  host.innerHTML = '';
+  result.sopPrimes.forEach((imp, i) => {
+    const chosenAt = result.sop.chosen.indexOf(i);
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'imp-chip';
+    if (result.sop.essential.has(i)) chip.classList.add('essential');
+    else if (chosenAt >= 0) chip.classList.add('used');
+    const ls = implicantLiterals(imp, n);
+    const label = ls.length
+      ? ls.map((l) => (l.neg ? `<span class="ovl">${l.name}</span>` : l.name)).join('')
+      : '1';
+    const size = 1 << popcount(imp.mask);
+    chip.innerHTML = `${label} <em>&times;${size}</em>`;
+    const color = chosenAt >= 0 ? GROUP_COLORS[chosenAt % GROUP_COLORS.length] : '#7fa695';
+    chip.style.setProperty('--chip', color);
+    const show = () => { state.highlight = { kind: 'sop', i, color }; applyHighlight(); };
+    const hide = () => { state.highlight = null; applyHighlight(); };
+    chip.addEventListener('mouseenter', show);
+    chip.addEventListener('focus', show);
+    chip.addEventListener('mouseleave', hide);
+    chip.addEventListener('blur', hide);
+    chip.addEventListener('click', show);
+    host.appendChild(chip);
+  });
+}
+
+function renderCode() {
+  const style = $('style-select').value;
+  const { result, n } = state;
+  const sop = formatSOP(result, style);
+  const pos = formatPOS(result, style);
+  const comment = style === 'python' ? '#' : style === 'vhdl' ? '--' : '//';
+  const lines = [];
+  lines.push(`${comment} ${n} inputs, ${result.ones.length} minterms${result.dcs.length ? `, ${result.dcs.length} don't-care${result.dcs.length > 1 ? 's' : ''}` : ''}`);
+  lines.push(`${comment} minimal SOP — ${result.sop.terms} term${result.sop.terms === 1 ? '' : 's'}, ${result.sop.literals} literal${result.sop.literals === 1 ? '' : 's'}`);
+  if (style === 'verilog') lines.push(`assign f = ${sop};`);
+  else if (style === 'vhdl') lines.push(`f <= ${sop};`);
+  else if (style === 'python') lines.push(`f = ${sop}`);
+  else if (style === 'math') lines.push(`f = ${sop}`);
+  else lines.push(`bool f = ${sop};`);
+  lines.push('');
+  lines.push(`${comment} minimal POS — ${result.pos.terms} term${result.pos.terms === 1 ? '' : 's'}, ${result.pos.literals} literal${result.pos.literals === 1 ? '' : 's'}`);
+  if (style === 'verilog') lines.push(`assign f = ${pos};`);
+  else if (style === 'vhdl') lines.push(`f <= ${pos};`);
+  else if (style === 'python') lines.push(`f = ${pos}`);
+  else if (style === 'math') lines.push(`f = ${pos}`);
+  else lines.push(`bool f = ${pos};`);
+  $('code-out').textContent = lines.join('\n');
+}
+
+function renderTruthTable() {
+  const { n, vals, result } = state;
+  const head = VAR_NAMES.slice(0, n).map((v) => `<th>${v}</th>`).join('');
+  const rows = vals.map((v, m) => {
+    const bits = VAR_NAMES.slice(0, n)
+      .map((_, j) => `<td>${(m >> (n - 1 - j)) & 1}</td>`).join('');
+    const cls = v === 1 ? 'yes' : v === 2 ? '' : 'no';
+    return `<tr><td>${m}</td>${bits}<td class="${cls}">${cellText(v)}</td></tr>`;
+  }).join('');
+  $('tt-out').innerHTML = `<thead><tr><th>#</th>${head}<th>f</th></tr></thead><tbody>${rows}</tbody>`;
+}
+
+/* ---- input handling ---- */
+
+function applyExpression(src) {
+  const err = $('expr-error');
+  const n = Number($('vars-select').value);
+  if (!src.trim()) { err.style.display = 'none'; return; }
+  try {
+    const vals = tableFromExpr(src, n);
+    err.style.display = 'none';
+    setVals(n, vals);
+  } catch (e) {
+    err.textContent = e.message;
+    err.style.display = 'block';
+  }
+}
+
+$('expr-input').addEventListener('input', (e) => applyExpression(e.target.value));
+
+$('vars-select').addEventListener('change', () => {
+  const n = Number($('vars-select').value);
+  const src = $('expr-input').value;
+  if (src.trim()) { applyExpression(src); if (state.n === n) return; }
+  // Resize in place: keep the low minterms, pad or truncate.
+  const vals = new Array(1 << n).fill(0);
+  for (let m = 0; m < Math.min(vals.length, state.vals.length); m++) vals[m] = state.vals[m];
+  setVals(n, vals);
+});
+
+$('kmap-host').addEventListener('click', (e) => {
+  const td = e.target.closest('.kmap-cell');
+  if (!td) return;
+  cycleCell(Number(td.dataset.m));
+});
+$('kmap-host').addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const td = e.target.closest('.kmap-cell');
+  if (!td) return;
+  e.preventDefault();
+  cycleCell(Number(td.dataset.m));
+});
+
+function cycleCell(m) {
+  state.vals[m] = (state.vals[m] + 1) % 3;
+  // The expression no longer describes the map, so stop claiming it does.
+  $('expr-input').value = '';
+  $('expr-error').style.display = 'none';
+  recompute();
+  const td = document.querySelector(`.kmap-cell[data-m="${m}"]`);
+  if (td) td.focus();
+}
+
+$('rand-btn').addEventListener('click', () => {
+  const n = Number($('vars-select').value);
+  const size = 1 << n;
+  const vals = new Array(size);
+  const rnd = new Uint8Array(size);
+  crypto.getRandomValues(rnd);
+  for (let m = 0; m < size; m++) vals[m] = rnd[m] < 118 ? 1 : rnd[m] < 138 ? 2 : 0;
+  $('expr-input').value = '';
+  setVals(n, vals);
+});
+
+$('clear-btn').addEventListener('click', () => {
+  $('expr-input').value = '';
+  setVals(Number($('vars-select').value), new Array(1 << Number($('vars-select').value)).fill(0));
+});
+
+$('invert-btn').addEventListener('click', () => {
+  $('expr-input').value = '';
+  setVals(state.n, state.vals.map((v) => (v === 2 ? 2 : v === 1 ? 0 : 1)));
+});
+
+$('style-select').addEventListener('change', renderCode);
+
+$('copy-btn').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText($('code-out').textContent);
+    const toast = $('copy-toast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 1200);
+  } catch (e) { /* clipboard blocked — the text is selectable anyway */ }
+});
+
+const sel = $('preset-select');
+PRESETS.forEach((p, i) => {
+  const opt = document.createElement('option');
+  opt.value = String(i);
+  opt.textContent = p.label;
+  sel.appendChild(opt);
+});
+sel.addEventListener('change', () => {
+  const p = PRESETS[Number(sel.value)];
+  if (!p) return;
+  $('vars-select').value = String(p.n);
+  if (p.expr) {
+    $('expr-input').value = p.expr;
+    applyExpression(p.expr);
+  } else {
+    $('expr-input').value = '';
+    const vals = new Array(1 << p.n).fill(0);
+    p.minterms.forEach((m) => { vals[m] = 1; });
+    p.dontcares.forEach((m) => { vals[m] = 2; });
+    setVals(p.n, vals);
+  }
+  sel.value = '';
+});
+
+// Opening state: the textbook map, so the page shows real work immediately.
+$('expr-input').value = '';
+(() => {
+  const vals = new Array(16).fill(0);
+  [0, 1, 2, 5, 6, 7, 8, 9, 10, 14].forEach((m) => { vals[m] = 1; });
+  setVals(4, vals);
+})();
+</script>
+<!-- Slippy Deck: floating Slippy TV + jukebox player. Renders nothing unless admin.slippylabs.com/whoami confirms a signed-in account. -->
+<script defer src="https://slippylabs.com/deck/deck.js"></script>
+<!-- Slippy Labs sitewide privacy link. Self-contained on purpose: these sites
+     share no CSS, so it carries its own styles and inherits the page's text
+     colour instead of assuming a palette. position/z-index are load bearing --
+     the HUD theme's .starfield/.scanlines are fixed at z-index 0-1 and would
+     paint straight over an unpositioned footer.
+     The .page-wrap trim below is what keeps the bar on the first screen. -->
+<div class="sl-legal"><a href="https://slippylabs.com/privacy.html">Privacy</a></div>
+<style>
+.sl-legal{box-sizing:border-box;position:relative;z-index:3;height:64px;display:flex;align-items:center;justify-content:center;margin:0;padding:0 12px;font-family:"Consolas","SFMono-Regular",Menlo,Monaco,"Courier New",monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.5}
+.sl-legal a{color:inherit;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 14px}
+.sl-legal a:hover,.sl-legal a:focus-visible{text-decoration:underline;opacity:1}
+/* This page centres .page-wrap at min-height:100vh, which would push the bar a
+   whole screen below the fold. Give back exactly the bar height instead of
+   adding a scrollbar to a page that had none. */
+.page-wrap{min-height:calc(100vh - 64px)}
+</style>
+</body>
+</html>
